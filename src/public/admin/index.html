@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Content Manager</title>
+    <link href="/admin/config.yml" type="text/yaml" rel="cms-config-url">
+</head>
+<body>
+    <script src="https://unpkg.com/decap-cms@3.9.0/dist/decap-cms.js"></script>
+    <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+    <script>
+    // 1. HÀM TÁCH ID (Giữ nguyên logic "Thợ Săn" mạnh mẽ)
+    const getYoutubeId = (url) => {
+        if (!url) return null;
+        // Nếu đã là ID chuẩn 11 ký tự thì lấy luôn
+        if (url.length === 11 && /^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+        
+        // Regex tìm ID sau v=, youtu.be/ hoặc embed/
+        const match = url.match(/(?:v=|youtu\.be\/|embed\/)([a-zA-Z0-9_-]{11})/);
+        return match ? match[1] : null;
+    };
+
+    // 2. ĐĂNG KÝ WIDGET
+    CMS.registerEditorComponent({
+        id: "youtube",
+        label: "Youtube Video",
+        fields: [
+            {
+                name: "url",
+                label: "Youtube Link",
+                widget: "string",
+                hint: "Dán link Youtube vào đây (Ví dụ: https://youtu.be/AbSpXa4tPq0...)"
+            }
+        ],
+        // Pattern này khớp với link youtube.com chuẩn
+        pattern: /^<div class="youtube-embed"><iframe src="https:\/\/www\.youtube\.com\/embed\/([^"]+)" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen><\/iframe><\/div>$/,
+        
+        fromBlock: function(match) {
+            return {
+                url: match[1] ? `https://www.youtube.com/watch?v=${match[1]}` : ''
+            };
+        },
+        
+        toBlock: function(obj) {
+            const videoId = getYoutubeId(obj.url);
+            if (!videoId) return ''; 
+            
+            // QUAY VỀ DOMAIN CHUẨN: youtube.com
+            return (
+                '<div class="youtube-embed"><iframe src="https://www.youtube.com/embed/' + videoId + '" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe></div>'
+            );
+        },
+        
+        toPreview: function(obj) {
+            const videoId = getYoutubeId(obj.url);
+            if (!videoId) {
+                return '<div style="padding: 10px; text-align: center; color: #666; border: 1px dashed #ccc;">⏳ Vui lòng dán link video...</div>';
+            }
+
+            // Preview cũng dùng youtube.com
+            return (
+                '<div class="youtube-embed" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border: 1px solid #333; background: #000;">' +
+                '<iframe src="https://www.youtube.com/embed/' + videoId + '" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>' +
+                '</div>'
+            );
+        }
+    });
+
+    // 3. EVENT LISTENER (Giữ nguyên)
+    CMS.registerEventListener({
+        name: 'preSave',
+        handler: ({ entry }) => {
+            const data = entry.get('data');
+            if (data.has('body')) {
+                let body = data.get('body');
+                let originalBody = body;
+                if (body) {
+                    body = body.replace(/\*\s+([\"“”])/g, '*$1');
+                    body = body.replace(/([\"“”])\s+\*/g, '$1*');
+                    body = body.replace(/([“"'])\*/g, '*$1');
+                    body = body.replace(/\*([”"'])/g, '$1*');
+                    if (body !== originalBody) {
+                        return data.set('body', body);
+                    }
+                }
+            }
+            return data;
+        },
+    });
+</script>
+</body>
+</html>

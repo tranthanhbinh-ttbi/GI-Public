@@ -1,0 +1,41 @@
+backend:
+  name: github
+  repo: tranthanhbinh-ttbi/GI
+  branch: main
+  base_url: https://genderinsights.vercel.app
+
+media_folder: "src/public/uploads"
+public_folder: "/uploads"
+
+slug:
+  encoding: "ascii"
+  clean_accents: true
+  sanitize_replacement: "-"
+
+collections:
+  - name: "series"
+    label: "Trang Series"
+    folder: "src/content/series"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Tiêu đề", name: "title", widget: "string" }
+      - { label: "Ngày đăng", name: "date", widget: "datetime", format: "YYYY-MM-DD HH:mm" }
+      - { label: "Mô tả ngắn", name: "description", widget: "text" }
+      - { label: "Danh mục", name: "category", widget: "select", options: ["Bài Viết", "Video", "Podcast"] }
+      - { lable: "Chủ đề", name: "topics", widget: "select"}
+      - { label: "Ảnh bìa", name: "thumbnail", widget: "image" }
+      - { label: "Nội dung", name: "body", widget: "markdown" }
+
+  - name: "news"
+    label: "Trang Tin Tức"
+    folder: "src/content/news"
+    create: true
+    slug: "{{slug}}"
+    fields:
+      - { label: "Tiêu đề", name: "title", widget: "string" }
+      - { label: "Ngày đăng", name: "date", widget: "datetime" }
+      - { label: "Danh mục", name: "category", widget: "select", options: ["Gender Insights", "Đối Tác", "Truyền Thông"] }
+      - { label: "Ảnh đại diện", name: "thumbnail", widget: "image" }
+      - { label: "Mô tả ngắn", name: "description", widget: "text" }
+      - { label: "Nội dung chi tiết", name: "body", widget: "markdown" }

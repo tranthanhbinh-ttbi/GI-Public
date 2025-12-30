@@ -1,0 +1,131 @@
+require('dotenv').config();
+const fastify = require('fastify')
+const minifier = require('html-minifier-terser')
+const path = require('node:path')
+const crypto = require('node:crypto')
+const FPassport = require('@fastify/passport')
+
+const { migrate } = require('./src/models')
+const configurePassport = require('./src/config/oauth-config')
+
+const sessionSecretBase64 = process.env.SESSION_SECRET || ''
+let sessionKey = null
+try {
+  const keyCandidate = Buffer.from(sessionSecretBase64, 'base64')
+  if (keyCandidate.length === 32) {
+    sessionKey = keyCandidate
+  } else {
+    sessionKey = crypto.randomBytes(32)
+    console.warn('SESSION_SECRET is missing or invalid. Using a random ephemeral 32-byte key.')
+  }
+} catch (_) {
+  sessionKey = crypto.randomBytes(32)
+  console.warn('SESSION_SECRET is invalid base64. Using a random ephemeral 32-byte key.')
+}
+
+const app = fastify({ trustProxy: true, logger: false, connectionTimeout: 5000, bodyLimit: 1048576 * 2 })
+
+app.register(require('@fastify/compress'), {
+  global: true,
+  threshold: 2048,
+  encodings: ['br', 'gzip']
+})
+app.register(require('@fastify/static'), {
+  root: path.join(__dirname, 'src', 'public'),
+  setHeaders: (res, path, stat) => {
+    res.setHeader('Cache-Control', 'public, max-age=31536000');
+  }
+})
+
+app.register(require('@fastify/rate-limit'), {
+  max: 500,
+  timeWindow: '1 minute',
+  cache: 10000,
+})
+
+
+
+app.register(require('@fastify/cookie'), {
+  parseOptions: {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: process.env.NODE_ENV === 'production',
+    path: '/',
+  },
+})
+app.register(require('@fastify/secure-session'), {
+  key: sessionKey,
+  sodium: require('sodium-javascript'),
+  cookieName: 'session',
+  cookie: {
+    path: '/',
+    sameSite: 'lax',
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 86400 * 30
+  },
+})
+app.register(require('@fastify/csrf-protection'), {
+  sessionPlugin: '@fastify/secure-session'
+})
+
+configurePassport(app)
+app.register(FPassport.initialize())
+app.register(FPassport.secureSession())
+
+app.register(require('@fastify/caching'), {
+  privacy: 'public',
+  ttl: 900000
+});
+app.register(require('@fastify/view'), {
+  engine: {
+    ejs: require('ejs')
+  },
+  templates: path.join(__dirname, 'src', 'views'),
+  production: process.env.NODE_ENV === 'production',
+  options: {
+    cache: true,
+    useHtmlMinifier: minifier,
+    htmlMinifierOptions: {
+      collapseWhitespace: true,
+      removeComments: true,
+      minifyCSS: true,
+      minifyJS: true,
+    }
+  }
+})
+
+app.register(require('./src/routes/pages-routes'))
+app.register(require('./src/routes/api-routes'))
+app.register(require('./src/routes/auth-routes'))
+app.register(require('./src/routes/mail-routes'))
+app.register(require('./src/routes/follow-routes'))
+
+const start = async () => {
+  try {
+    try {
+      await migrate()
+    } catch (e) {
+      console.warn('DB connect/migrate failed, continuing to start server:', e.message)
+    }
+    const port = Number(process.env.PORT) || 3000
+    const host = process.env.HOST || '0.0.0.0'
+    await app.listen({ port, host })
+
+    if (app.server) {
+      app.server.keepAliveTimeout = 65_000
+      app.server.headersTimeout = 66_000
+      app.server.requestTimeout = 60_000
+    }
+
+    console.log(`Server listening on http://${host === '0.0.0.0' ? 'localhost' : host}:${port}`)
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+if (require.main === module && !process.env.VERCEL) {
+  start();
+}
+
+module.exports = app;
