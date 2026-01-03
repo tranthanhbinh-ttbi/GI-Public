@@ -29,7 +29,11 @@
     color: var(--gen-body-color);
     margin-bottom: 1.5rem;
 }
-
+@media (max-width: 768px) {
+    .post-breadcrumbs {
+        flex-wrap: wrap;
+    }
+}
 .post-breadcrumbs a {
     color: var(--gen-body-color);
     text-decoration: none;

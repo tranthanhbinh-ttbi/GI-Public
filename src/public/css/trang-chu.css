@@ -41,10 +41,12 @@ main {
 
             >h1 {
                 position: relative;
-                max-width: 25rem;
                 margin: 16px 0;
                 line-height: 4rem;
-                font-size: 3rem;
+                font-size: clamp(2.25rem, 1.5vw + 3.6vw, 3rem);
+                max-width: fit-content;
+                padding-right: 20px;
+                width: fit-content;
                 font-weight: 900;
                 white-space: nowrap;
                 overflow: hidden;
@@ -65,6 +67,9 @@ main {
                 animation:
                     typing 12s steps(50) infinite,
                     blink 0.75s step-end infinite;
+            }
+            > h2 {
+                font-size: clamp(1.25rem, 0.5vw + 1.5vw, 1.5rem);
             }
         }
 
@@ -251,12 +256,12 @@ main {
         gap: 20px;
         text-align: center;
         margin: 64px 0;
-
+        scroll-margin-top: 5rem;
         .figr {
             font-size: 37px;
             font-weight: 700;
             background: linear-gradient(315deg, #be123c, #ffa387);
-            text-shadow: #ffa387 0px 2px 7px;
+            text-shadow: #ffa387 0px 0px 2rem;
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -738,56 +743,6 @@ main {
         #containers {
             padding-bottom: 2rem;
             grid-template-columns: 1fr;
-        }
-    }
-}
-
-@media (max-width: 425px) {
-    main {
-        #containers {
-            #hro-cont {
-                >h1 {
-                    max-width: 21rem;
-                    font-size: 2.5rem;
-                }
-
-                >h2 {
-                    font-size: 1.4rem;
-                }
-            }
-        }
-    }
-}
-
-@media (max-width: 375px) {
-    main {
-        #containers {
-            #hro-cont {
-                >h1 {
-                    max-width: 20rem;
-                    font-size: 2.35rem;
-                }
-
-                >h2 {
-                    font-size: 1.25rem;
-                }
-            }
-        }
-    }
-}
-@media (max-width: 340px) {
-    main {
-        #containers {
-            #hro-cont {
-                >h1 {
-                    max-width: 20rem;
-                    font-size: 2.15rem;
-                }
-
-                >h2 {
-                    font-size: 1.21rem;
-                }
-            }
         }
     }
 }
